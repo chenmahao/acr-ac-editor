@@ -13,6 +13,20 @@ This app does **not** crawl or access the ACR AC Portal. It imports data from a 
 
 ## One-command local run
 
+If you are using the portable Node/npm installed in this project folder, run:
+
+```bash
+./run-local-dev.sh
+```
+
+Or enable the local Node/npm first:
+
+```bash
+source ./use-local-node.sh
+```
+
+Then run the normal commands:
+
 ```bash
 npm install
 npm run dev
