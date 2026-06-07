@@ -8,6 +8,17 @@ import { RecordGrid } from "./components/RecordGrid";
 import { ImportDialog } from "./components/ImportDialog";
 
 type Selection = { panel?: string; topic?: string };
+const BLANK_FILTER = "__blank__";
+
+function toFilterValue(value?: string) {
+  if (!value) return "";
+  return value.startsWith("(Unassigned") ? BLANK_FILTER : value;
+}
+
+function toRecordValue(value?: string) {
+  if (!value || value.startsWith("(Unassigned")) return "";
+  return value;
+}
 
 export function App() {
   const [tree, setTree] = useState<TreePanel[]>([]);
@@ -27,8 +38,8 @@ export function App() {
 
   const paramsBase = useMemo(() => {
     const params = new URLSearchParams();
-    if (selection.panel) params.set("panel", selection.panel.startsWith("(Unassigned") ? "" : selection.panel);
-    if (selection.topic) params.set("topic", selection.topic.startsWith("(Unassigned") ? "" : selection.topic);
+    if (selection.panel) params.set("panel", toFilterValue(selection.panel));
+    if (selection.topic) params.set("topic", toFilterValue(selection.topic));
     if (search) params.set("search", search);
     return params;
   }, [selection, search]);
@@ -112,8 +123,8 @@ export function App() {
 
   async function addRecord() {
     const seed = {
-      panel: selection.panel?.startsWith("(Unassigned") ? "" : selection.panel ?? "",
-      topic: selection.topic?.startsWith("(Unassigned") ? "" : selection.topic ?? "",
+      panel: toRecordValue(selection.panel),
+      topic: toRecordValue(selection.topic),
       variant: selectedScenario?.variant ?? "",
       scenario: selectedScenario?.scenario ?? "",
       scenario_id: selectedScenario?.scenario_id ?? "",

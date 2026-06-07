@@ -1,9 +1,8 @@
-import fs from "node:fs";
 import path from "node:path";
 import express from "express";
 import cors from "cors";
 import multer from "multer";
-import XLSX from "xlsx";
+import * as XLSX from "xlsx";
 import { openDb, uploadDir, exportDir } from "./db";
 import { DB_FIELDS, importExcelToDb, previewWorkbook, type FieldMapping } from "./excel";
 
@@ -11,9 +10,27 @@ const app = express();
 const db = openDb();
 const upload = multer({ dest: uploadDir });
 const PORT = Number(process.env.PORT ?? 8787);
+const BLANK_FILTER = "__blank__";
 
 app.use(cors());
 app.use(express.json({ limit: "20mb" }));
+
+function addExactFilter(
+  where: string[],
+  params: Record<string, unknown>,
+  field: string,
+  value: unknown
+) {
+  if (value === undefined) return;
+  const raw = String(value);
+  if (!raw) return;
+  if (raw === BLANK_FILTER || /^\(Unassigned .+\)$/.test(raw)) {
+    where.push(`${field} = ''`);
+    return;
+  }
+  where.push(`${field} = @${field}`);
+  params[field] = raw;
+}
 
 function listQuery(req: express.Request) {
   const allowedSort = new Set([...DB_FIELDS, "id", "updated_at"]);
@@ -25,10 +42,7 @@ function listQuery(req: express.Request) {
   const params: Record<string, unknown> = { limit, offset };
 
   for (const field of ["panel", "topic", "variant", "scenario", "scenario_id"] as const) {
-    if (req.query[field]) {
-      where.push(`${field} = @${field}`);
-      params[field] = String(req.query[field]);
-    }
+    addExactFilter(where, params, field, req.query[field]);
   }
   if (req.query.search) {
     where.push(`(
@@ -78,10 +92,7 @@ app.get("/api/scenarios", (req, res) => {
   const where: string[] = [];
   const params: Record<string, string> = {};
   for (const field of ["panel", "topic"] as const) {
-    if (req.query[field]) {
-      where.push(`${field} = @${field}`);
-      params[field] = String(req.query[field]).replace(/^\(Unassigned .+\)$/, "");
-    }
+    addExactFilter(where, params, field, req.query[field]);
   }
   if (req.query.search) {
     where.push("(scenario like @search or scenario_id like @search or variant like @search)");

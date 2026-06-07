@@ -138,7 +138,14 @@ npm run import:excel -- import ../gravitas_excel_database/gravitas_local_search_
 
 ## GitHub initialization
 
-Local git setup:
+This repository has already been prepared as a local git project. If you use GitHub Desktop:
+
+1. Open GitHub Desktop.
+2. Choose `File` -> `Add Local Repository`.
+3. Select this folder.
+4. Click `Fetch origin` or `Push origin` when GitHub Desktop shows local commits waiting to upload.
+
+Equivalent command-line setup for a brand-new copy:
 
 ```bash
 git init
@@ -146,16 +153,11 @@ git add .
 git commit -m "Initial ACR AC editor MVP"
 ```
 
-Create a GitHub repository with GitHub CLI:
+Then connect it to your GitHub repository:
 
 ```bash
-gh repo create acr-ac-editor --private --source=. --remote=origin --push
-```
-
-Or public:
-
-```bash
-gh repo create acr-ac-editor --public --source=. --remote=origin --push
+git remote add origin https://github.com/chenmahao/acr-ac-editor.git
+git push -u origin main
 ```
 
 ## Important non-goals
