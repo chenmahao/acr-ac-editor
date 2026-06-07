@@ -12,11 +12,18 @@ if (!command || !excelPath || !["preview", "import"].includes(command)) {
 }
 
 const resolved = path.resolve(excelPath);
-if (command === "preview") {
-  console.log(JSON.stringify(previewWorkbook(resolved), null, 2));
-} else {
-  const db = openDb();
-  const result = importExcelToDb(db, { sourcePath: resolved, sheetName });
-  db.close();
-  console.log(JSON.stringify(result, null, 2));
+async function main() {
+  if (command === "preview") {
+    console.log(JSON.stringify(previewWorkbook(resolved), null, 2));
+  } else {
+    const db = openDb();
+    const result = importExcelToDb(db, { sourcePath: resolved, sheetName });
+    db.close();
+    console.log(JSON.stringify(result, null, 2));
+  }
 }
+
+main().catch((error) => {
+  console.error(error instanceof Error ? error.message : String(error));
+  process.exit(1);
+});

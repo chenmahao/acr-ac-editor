@@ -1,8 +1,9 @@
 import path from "node:path";
+import fs from "node:fs";
 import express from "express";
 import cors from "cors";
 import multer from "multer";
-import * as XLSX from "xlsx";
+import * as XLSX from "@e965/xlsx";
 import { openDb, uploadDir, exportDir } from "./db";
 import { DB_FIELDS, importExcelToDb, previewWorkbook, type FieldMapping } from "./excel";
 
@@ -173,25 +174,33 @@ app.post("/api/records/:id/duplicate", (req, res) => {
   res.status(201).json(db.prepare("select * from criteria_records where id=?").get(result.lastInsertRowid));
 });
 
-app.post("/api/import/preview", upload.single("file"), (req, res) => {
-  const sourcePath = req.file?.path ?? String(req.body.path ?? "");
-  if (!sourcePath) return res.status(400).json({ error: "Upload a file or provide a path." });
-  const previews = previewWorkbook(sourcePath);
-  res.json({
-    sourcePath,
-    sourceName: req.file?.originalname ?? path.basename(sourcePath),
-    sheets: previews,
-    fields: DB_FIELDS
-  });
+app.post("/api/import/preview", upload.single("file"), async (req, res) => {
+  try {
+    const sourcePath = req.file?.path ?? String(req.body.path ?? "");
+    if (!sourcePath) return res.status(400).json({ error: "Upload a file or provide a path." });
+    const previews = previewWorkbook(sourcePath);
+    res.json({
+      sourcePath,
+      sourceName: req.file?.originalname ?? path.basename(sourcePath),
+      sheets: previews,
+      fields: DB_FIELDS
+    });
+  } catch (error) {
+    res.status(400).json({ error: error instanceof Error ? error.message : String(error) });
+  }
 });
 
-app.post("/api/import/commit", (req, res) => {
-  const sourcePath = String(req.body.sourcePath ?? "");
-  const sheetName = req.body.sheetName ? String(req.body.sheetName) : undefined;
-  const mapping = (req.body.mapping ?? {}) as FieldMapping;
-  if (!sourcePath) return res.status(400).json({ error: "sourcePath is required." });
-  const result = importExcelToDb(db, { sourcePath, sheetName, mapping });
-  res.json(result);
+app.post("/api/import/commit", async (req, res) => {
+  try {
+    const sourcePath = String(req.body.sourcePath ?? "");
+    const sheetName = req.body.sheetName ? String(req.body.sheetName) : undefined;
+    const mapping = (req.body.mapping ?? {}) as FieldMapping;
+    if (!sourcePath) return res.status(400).json({ error: "sourcePath is required." });
+    const result = importExcelToDb(db, { sourcePath, sheetName, mapping });
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({ error: error instanceof Error ? error.message : String(error) });
+  }
 });
 
 app.get("/api/import-runs", (_req, res) => {
@@ -227,7 +236,7 @@ app.get("/api/export/:format", (req, res) => {
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(rows), "ACR_AC_Records");
     const outPath = path.join(exportDir, "acr_ac_records.xlsx");
-    XLSX.writeFile(workbook, outPath);
+    fs.writeFileSync(outPath, XLSX.write(workbook, { bookType: "xlsx", type: "buffer" }));
     return res.download(outPath);
   }
   return res.status(400).json({ error: "Unsupported export format." });

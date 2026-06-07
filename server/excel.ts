@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
-import * as XLSX from "xlsx";
+import * as XLSX from "@e965/xlsx";
 import type Database from "better-sqlite3";
 
 export const DB_FIELDS = [
@@ -74,7 +74,7 @@ export function readWorkbook(filePath: string) {
   if (!fs.existsSync(filePath)) {
     throw new Error(`Excel file not found: ${filePath}`);
   }
-  return XLSX.readFile(filePath, { cellDates: false });
+  return XLSX.read(fs.readFileSync(filePath), { type: "buffer", cellDates: false });
 }
 
 function rowsForSheet(workbook: XLSX.WorkBook, sheetName: string) {
